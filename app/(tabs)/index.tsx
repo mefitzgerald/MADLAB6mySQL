@@ -1,8 +1,4 @@
-import {
-  SQLiteDatabase,
-  SQLiteProvider,
-  useSQLiteContext
-} from "expo-sqlite";
+import { SQLiteDatabase, SQLiteProvider, useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
 import { Button, StyleSheet, Text, TextInput, View } from "react-native";
 
@@ -57,7 +53,6 @@ export function Content() {
     }
     setup();
   }, [todos]);
-
   async function dropdB() {
     console.log("drop db");
     await db.execAsync("DROP TABLE IF EXISTS todos;");
