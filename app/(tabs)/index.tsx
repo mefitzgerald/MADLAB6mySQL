@@ -1,3 +1,4 @@
+import { Picker } from "@react-native-picker/picker";
 import { SQLiteDatabase, SQLiteProvider, useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
 import { Button, StyleSheet, Text, TextInput, View } from "react-native";
@@ -37,11 +38,13 @@ export function Header() {
 interface Todo {
   value: string;
   intValue: number;
+  isDone: number; // 0 or 1
 }
 
 export function Content() {
   const [name, onChangeName] = useState("Enter Name");
   const [number, onChangeNumber] = useState("1");
+  const [isDone, setIsDone] = useState(0); // 0 = false, 1 = true
   const db = useSQLiteContext();
   const [todos, setTodos] = useState<Todo[]>([]);
 
@@ -49,7 +52,6 @@ export function Content() {
     async function setup() {
       const result = await db.getAllAsync<Todo>("SELECT * FROM todos");
       return result;
-      setTodos(result);
     }
     setup();
   }, [todos]);
@@ -57,7 +59,7 @@ export function Content() {
     console.log("drop db");
     await db.execAsync("DROP TABLE IF EXISTS todos;");
     //reset the ToDo hook others the view won't change.
-    let rTodo = { value: "empty", intValue: 0 };
+    let rTodo = { value: "empty", intValue: 0, isDone: 0 };
     setTodos([rTodo]);
   }
 
@@ -85,12 +87,13 @@ export function Content() {
     //list all tables in case you added one. And it is still there!!
     console.log("insert ");
     const result = await db.runAsync(
-      "INSERT INTO todos (value, intValue) VALUES (?, ?)",
+      "INSERT INTO todos (value, intValue, isDone) VALUES (?, ?, ?)",
       name,
       number,
+      isDone,
     );
     if (result.changes == 0) {
-      console.log("Not foud - no changes (error)");
+      console.log("Not found - no changes (error)");
     } else {
       console.log("Inserted: " + result.changes + " row(s)");
     }
@@ -152,6 +155,14 @@ export function Content() {
         <TextInput onChangeText={onChangeName} value={name} />
         <TextInput onChangeText={onChangeNumber} value={number} />
       </View>
+      <Picker
+        selectedValue={isDone}
+        style={{ height: 50, width: 150, padding: 20 }}
+        onValueChange={(itemValue) => setIsDone(itemValue)}
+      >
+        <Picker.Item label="Offline" value={0} />
+        <Picker.Item label="Online" value={1} />
+      </Picker>
 
       <View style={styles.buttonsCRUD}>
         <Button title="Insert" onPress={() => insertdB()} />
@@ -161,7 +172,8 @@ export function Content() {
       </View>
       {todos.map((todo, todoIndex) => (
         <View style={styles.todoItemContainer} key={todoIndex}>
-          <Text>{`${todo.intValue} - ${todo.value}`}</Text>
+          {/* <Text>{`${todo.intValue} - ${todo.value}`}</Text> */}
+          <Text>{`${todo.intValue} - ${todo.value} - ${todo.isDone ? "Online" : "Offline"}`}</Text>
         </View>
       ))}
     </View>
@@ -181,22 +193,27 @@ async function migrateDbIfNeeded(db: SQLiteDatabase) {
     console.log("creating tables and populating");
     await db.execAsync(`
 PRAGMA journal_mode = 'wal';
-CREATE TABLE IF NOT EXISTS todos (id INTEGER PRIMARY KEY NOT NULL, value TEXT NOT NULL, intValue INTEGER);
+CREATE TABLE IF NOT EXISTS 
+todos (id INTEGER PRIMARY KEY NOT NULL, 
+value TEXT NOT NULL, intValue INTEGER, isDone INTEGER NOT NULL DEFAULT 0);
 `);
     await db.runAsync(
-      "INSERT INTO todos (value, intValue) VALUES (?, ?)",
-      "hello",
+      "INSERT INTO todos (value, intValue, isDone) VALUES (?, ?, ?)",
+      "Bob Hawk",
       11,
+      1,
     );
     await db.runAsync(
-      "INSERT INTO todos (value, intValue) VALUES (?, ?)",
-      "world",
+      "INSERT INTO todos (value, intValue, isDone) VALUES (?, ?, ?)",
+      "Donald Trump",
       22,
+      0,
     );
     await db.runAsync(
-      "INSERT INTO todos (value, intValue) VALUES (?, ?)",
-      "everyone",
+      "INSERT INTO todos (value, intValue, isDone) VALUES (?, ?, ?)",
+      "President Comancho",
       44,
+      1,
     );
     currentDbVersion = 1;
   }
